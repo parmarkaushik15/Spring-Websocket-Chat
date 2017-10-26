@@ -14,8 +14,11 @@ public class UserMessage {
 	 private String messageFrom;
 	 private String messageTo;
 	 private String messageType;
-	 private Long messageDate;
+	 private String messageReadStatus;
+	 private Date messageDate;
 	 
+	 
+	
 	public String getId() {
 		return id;
 	}
@@ -46,10 +49,16 @@ public class UserMessage {
 	public void setMessageType(String messageType) {
 		this.messageType = messageType;
 	}
-	public Long getMessageDate() {
+	public Date getMessageDate() {
 		return messageDate;
 	}
-	public void setMessageDate(Long messageDate) {
+	public void setMessageDate(Date messageDate) {
 		this.messageDate = messageDate;
+	}
+	public String getMessageReadStatus() {
+		return messageReadStatus;
+	}
+	public void setMessageReadStatus(String messageReadStatus) {
+		this.messageReadStatus = messageReadStatus;
 	}
 }

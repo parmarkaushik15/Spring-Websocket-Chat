@@ -1,10 +1,12 @@
 package com.websocket.controller;
 
+import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -38,8 +40,21 @@ public class MessageController {
 	@MessageMapping("/chat/send")
     @SendTo("/channel/message")
     public UserMessage sendMessage(@Payload UserMessage userMessage) {
-		return messageRepository.save(userMessage);
+		return addMessage(userMessage);
     }
+
+	private UserMessage addMessage(UserMessage userMessage) {
+		List<User> users = userRepository.findByUserName(userMessage.getMessageTo());
+		userMessage.setMessageDate(new java.util.Date());
+		for (User user : users) {
+			if(user.isOnline() == true) {
+				userMessage.setMessageReadStatus("READ");
+			}else {
+				userMessage.setMessageReadStatus("UNREAD");
+			}
+		}
+		return messageRepository.save(userMessage);
+	}
 
     @MessageMapping("/chat/add")
     @SendTo("/channel/user")
@@ -51,8 +66,30 @@ public class MessageController {
     @GetMapping("/chat/get/{to}/{from}")
     public Map<String, Object> getMessageUser(@PathVariable("to") String to, @PathVariable("from") String from) {
         Map<String, Object> map = new HashMap<String, Object>();
+        List<UserMessage> allMessage = messageRepository.getAllMessage(to, from, new Sort(Sort.Direction.ASC, "messageDate"));
         map.put("status", 200);
+        map.put("content", allMessage);
         map.put("message", "Record fetch successfully");
+        return map;
+    }
+    
+    @GetMapping("/user/all")
+    public Map<String, Object> getAllUser() {
+        Map<String, Object> map = new HashMap<String, Object>();
+        List<User> allusers = userRepository.findAll();
+        map.put("status", 200);
+        map.put("content", allusers);
+        map.put("message", "Record fetch successfully");
+        return map;
+    }
+    
+    @PostMapping("/chat/create")
+    public Map<String, Object> createMessage(@RequestBody UserMessage userMessage) {
+    	Map<String, Object> map = new HashMap<String, Object>();
+        UserMessage record = addMessage(userMessage);
+        map.put("status", 200);
+        map.put("message", "Message send successfully");
+        map.put("record", record);
         return map;
     }
     
