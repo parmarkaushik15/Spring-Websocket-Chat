@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.websocket.server.PathParam;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -28,6 +30,7 @@ import com.websocket.repository.UserRepository;
 
 @Controller
 @RestController
+@RequestMapping("/api")
 public class MessageController {
 	
 	@Autowired
@@ -37,7 +40,7 @@ public class MessageController {
 	UserRepository userRepository;
 	
 	
-	@MessageMapping("/chat/send")
+	@MessageMapping("/message/send")
     @SendTo("/channel/message")
     public UserMessage sendMessage(@Payload UserMessage userMessage) {
 		return addMessage(userMessage);
@@ -56,20 +59,53 @@ public class MessageController {
 		return messageRepository.save(userMessage);
 	}
 
-    @MessageMapping("/chat/add")
+    @MessageMapping("/message/add")
     @SendTo("/channel/user")
     public User addUser(@Payload User user, SimpMessageHeaderAccessor headerAccessor) {
+    	System.out.println(user.getUserName());
         headerAccessor.getSessionAttributes().put("username", user.getUserName());
         return user;
     }
+
+	@MessageMapping("/info")
+    public Map<String, Object> info(@PathParam("t") String t) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        System.out.println(t);
+        map.put("status", 200);
+        map.put("message", "Record fetch successfully");
+        return map;
+    }
+
+	@GetMapping("/message/getlastactiveuser/{from}")
+    public Map<String, Object> getLastActiveUser(@PathVariable("from") String from) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        UserMessage message = null;
+        List<UserMessage> allMessage = messageRepository.findByMessageFrom(from, new Sort(Sort.Direction.ASC, "messageDate"));
+        int count = allMessage.size();
+        if(count != 0){
+        	message = allMessage.get(count-1);
+        }
+        List<User> users = userRepository.findByUserName(message.getMessageTo());
+        User user = null;
+        if(users.size() != 0){
+        	user = users.get(0);
+        }
+        List<UserMessage> allLastUserMessage = messageRepository.getAllMessage(message.getMessageTo(), from, new Sort(Sort.Direction.ASC, "messageDate"));
+        
+        map.put("status", 200);
+        map.put("lastactiveuser",user);
+        map.put("content", allLastUserMessage);
+        map.put("message", "Record fetch successfully");	
+        return map;
+    }
     
-    @GetMapping("/chat/get/{to}/{from}")
+    @GetMapping("/message/get/{to}/{from}")
     public Map<String, Object> getMessageUser(@PathVariable("to") String to, @PathVariable("from") String from) {
         Map<String, Object> map = new HashMap<String, Object>();
         List<UserMessage> allMessage = messageRepository.getAllMessage(to, from, new Sort(Sort.Direction.ASC, "messageDate"));
         map.put("status", 200);
         map.put("content", allMessage);
-        map.put("message", "Record fetch successfully");
+        map.put("message", "Record fetch successfully");	
         return map;
     }
     
@@ -82,6 +118,18 @@ public class MessageController {
         map.put("message", "Record fetch successfully");
         return map;
     }
+    
+    @GetMapping("/user/messageuser")
+    public Map<String, Object> getAllMessageUser() {
+        Map<String, Object> map = new HashMap<String, Object>();
+        List<User> allusers = userRepository.findAll();
+        map.put("status", 200);
+        map.put("content", allusers);
+        map.put("message", "Record fetch successfully");
+        return map;
+    }
+    
+    
     
     @PostMapping("/chat/create")
     public Map<String, Object> createMessage(@RequestBody UserMessage userMessage) {

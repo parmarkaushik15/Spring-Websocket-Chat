@@ -22,4 +22,6 @@ public interface MessageRepository extends MongoRepository<UserMessage, String> 
 	@Query("{'$or':[ {'$and':[ {'messageTo':?0}, {'messageFrom':?1} ]}, {'$and':[ {'messageFrom':?0}, {'messageTo':?1} ]} ]}")
 	List<UserMessage> getAllMessage(String to, String from, Sort sort);
 	
+	List<UserMessage> findByMessageFrom(String from, Sort sort);
+	
 }
